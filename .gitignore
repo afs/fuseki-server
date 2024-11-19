@@ -1,0 +1,28 @@
+# Package Files #
+*.jar
+*.war
+*.ear
+hs_err_pid*
+**/target/*
+**/run/**
+dependency-reduced-pom.xml
+
+# Eclipse
+.classpath
+.project
+.settings
+.recommenders
+.metadata
+ToDo
+
+# Backups
+*.bak
+*.backup
+*~
+.#*
+\#*
+
+# Not git
+DB*/
+UI/
+ui.jar
