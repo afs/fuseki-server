@@ -47,6 +47,21 @@ import org.slf4j.Logger;
 public class FMod_Admin implements FusekiAutoModule {
 
     private static FusekiModule singleton = new FMod_Admin();
+    // ----
+
+    @Override
+    public void start() {}
+
+    @Override
+    public String name() {
+        return "FMod Admin";
+    }
+
+    @Override
+    public int level() {
+        return 600;
+    }
+
     public static FusekiModule get() {
         return singleton;
     }
@@ -77,9 +92,6 @@ public class FMod_Admin implements FusekiAutoModule {
 
     @Override
     public void serverArgsPrepare(CmdGeneral fusekiCmd, ServerArgs serverArgs) {
-        // Called by
-
-        System.out.println("FMod_Admin.serverArgsPrepare");
         String admin = fusekiCmd.getValue(argAdmin);
         System.out.println("FMod_Admin.serverArgsPrepare: "+admin);
         if ( admin == null ) {
@@ -106,32 +118,15 @@ public class FMod_Admin implements FusekiAutoModule {
         FusekiApp.FUSEKI_BASE = directory;
     }
 
-    @Override
-    public void serverArgsBuilder(FusekiServer.Builder serverBuilder, Model configModel) {
-    }
+//    @Override
+//    public void serverArgsBuilder(FusekiServer.Builder serverBuilder, Model configModel) {
+//    }
 
     // ----
 
     @Override
-    public void start() {}
-
-    @Override
-    public String name() {
-        return "FMod Admin";
-    }
-
-    @Override
-    public int level() {
-        return 600;
-    }
-
-    @Override
     public void prepare(FusekiServer.Builder builder, Set<String> datasetNames, Model configModel) {
-
-        LOG.info("Fuseki Admin load");
-
         FusekiApp.setup();
-
         String configDir = FusekiApp.dirConfiguration.toString();
         List<DataAccessPoint> directoryDatabases = FusekiConfig.readConfigurationDirectory(configDir);
 
@@ -152,17 +147,13 @@ public class FMod_Admin implements FusekiAutoModule {
         });
 
         // Modify the server to include the admin operations.
+        // Security is performed by FMod_Shiro.
         ActionCtl actionBackup = new ActionBackup();
         builder
-//                // // Before the Fuseki filter!
-//                .addFilter("/$/*", new LocalhostOnly())
-
-                // ** Need POST
                 .addServlet("/$/datasets", new ActionDatasets())
                 .addServlet("/$/server", new ActionServerStatus())
-
-                // Require admin user
-                .addServlet("/$/backup", actionBackup).addServlet("/$/backups", actionBackup)
+                .addServlet("/$/backup", actionBackup)
+                .addServlet("/$/backups", actionBackup)
                 .addServlet("/$/backups-list", new ActionBackupList())
 
                 .enablePing(true)

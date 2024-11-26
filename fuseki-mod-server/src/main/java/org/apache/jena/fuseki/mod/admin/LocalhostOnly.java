@@ -39,7 +39,7 @@ public class LocalhostOnly implements Filter {
     private static String LOCALHOST_IpV6_a = "[0:0:0:0:0:0:0:1]";
     private static String LOCALHOST_IpV6_b = "0:0:0:0:0:0:0:1";
     // This is what appears in the Chrome developer tools client-side.
-    // "[0:0:0:0:0:0:0:1]" by the time it arrives here, It is not clear which
+    // "[0:0:0:0:0:0:0:1]" by the time it arrives here, it is not clear which
     // software component is responsible for that.
     // To be safe we add "[::1]".
     private static String LOCALHOST_IpV6_c = "[::1]";

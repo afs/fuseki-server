@@ -22,12 +22,10 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.fuseki.main.FusekiServer;
-import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.http.HttpOp;
 import org.apache.jena.http.auth.AuthEnv;
@@ -80,13 +78,12 @@ public class RunFusekiModServer {
         }
 
         // << ---- FusekiModServer
-        FusekiModules modules = null;
         //FusekiModules modules = selection;
 
         //FusekiModules.add(new FMod_UI());
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
         FusekiServer server = FusekiServer.create()
-                .fusekiModules(modules)
+                //.fusekiModules(modules)
                 //.add("/ds", dsg) -- not with a later create
                 .port(4040)
                 .build()

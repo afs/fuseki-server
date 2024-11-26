@@ -18,22 +18,17 @@
 
 package org.apache.jena.fuseki.mod;
 
-import org.junit.platform.suite.api.SelectClasses;
-import org.junit.platform.suite.api.Suite;
+import org.junit.jupiter.api.Test;
 
-import org.apache.jena.fuseki.mod.admin.TestAdmin;
-import org.apache.jena.fuseki.mod.admin.TestAdminAPI;
+public class TestFusekiServer {
+    // FusekiModServer
 
-@Suite
-@SelectClasses({TestAdmin.class, TestAdminAPI.class,
-    // Admin
-    // Shiro
-    // UI
-    // Prometheus
+    // Test Shiro
+    // Test admin function availability
+    // Test metrics availability
+    // Test --admin--adminArea=run
 
-    TestFusekiServer.class
+    // Test Environment variables
 
-})
-public class TC_FusekiMods {
-    public TC_FusekiMods() {}
+    @Test public void test() {}
 }

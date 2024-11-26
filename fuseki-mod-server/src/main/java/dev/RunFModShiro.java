@@ -23,6 +23,9 @@ import java.net.URI;
 import org.apache.jena.atlas.lib.Lib;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.fuseki.main.FusekiServer;
+import org.apache.jena.fuseki.main.cmds.FusekiMain;
+import org.apache.jena.fuseki.main.sys.FusekiModules;
+import org.apache.jena.fuseki.mod.shiro.FMod_Shiro;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.http.auth.AuthEnv;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
@@ -33,7 +36,7 @@ public class RunFModShiro {
 
     public static void main(String[] args) {
         try {
-            main2();
+            mainShiro();
         } catch (Throwable th) {
             th.printStackTrace();
         } finally {
@@ -41,16 +44,21 @@ public class RunFModShiro {
         }
     }
 
-    public static void main2() {
+    public static void mainShiro() {
         //Automatic: FusekiModules.add(new FMod_Shiro());
         FusekiLogging.setLogging();
         // TODO Proper append path
-        System.setProperty("FUSEKI_BASE", "src/test/files/");
+
+
+        System.setProperty("FUSEKI_BASE", "run");
         //System.setProperty("FUSEKI_SHIRO", "disabled");
 
+        FusekiModules fmods = FusekiModules.create(new FMod_Shiro());
+        FusekiMain.addCustomiser(new FMod_Shiro());
         FusekiServer server = FusekiServer.create()
                 .port(0)
                 .add("/ds", DatasetGraphFactory.createTxnMem())
+                .fusekiModules(fmods)
                 .start();
 
         String URL = "http://localhost:"+server.getPort()+"/ds";

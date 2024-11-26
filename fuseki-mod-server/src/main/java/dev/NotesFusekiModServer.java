@@ -18,34 +18,34 @@
 
 package dev;
 
-import java.util.concurrent.atomic.LongAdder;
-
 public class NotesFusekiModServer {
 
     // WIP:: FusekiModServer.main
 
-    // ActionStats: UI or Admin.
-    //   "Read only server"
-    // [ ] FMod_Shiro - dft localhost
-    // [ ] fusekiCmd -> cmdLine
-    // [ ] Finding the UI resources
+    // [ ] Put it all together
+    // [ ] and test.
 
-    // -- Cmd
-    // [ ] cmdLine.getUsage().startCategory("Fuseki") for
-    // [ ] --file very long
-    //     Handler multiple line descriptions?
-    // [ ] Rename "CmdGeneral" as "CommandLine" or "CmdLine"
+    // [ ] Enforce no mixed setup.
 
-    // ==
-    // "Workbench"
-    // "Desktop development"
-    //   Split admin  and stats
-    // @args
+    // [x] Check vs Fuseki-full arguments.
+    // [ ] Context in builder, pass to server. Read only context.
+    //
+    // [ ] Do we need a "context" in the args-builder phase?
+    //     (servletAttr could serve this purpose - it is passed to the server.)
+    //     Context. available to the running server.
+    //       Check context in FusekiConfig - server attach context goes into global.
+    //       Currently, no server Context - it uses global.
+
+    // [ ] UI asset management.
+    // [ ] revisit/revise copy of ContextAccumulator
+    //     ExecUpdateHTTPBuilder, RDFParserBuilder, others need to pass in a base that is a copy.
+    //     base always exists - copy on create not supplier/delayed.
+    //     OR baseContext is never updated. Check.
+
+    // [ ] FMod admin sets FUSEKI_SHIRO
+    // [ ] FMod admin args
 
     // ==== Phase one : Repackaging and no more.
-    //   Admin by localhost
-    //   OR shiro.
-
     // [ ] Reload
 
     // == Server
@@ -56,6 +56,43 @@ public class NotesFusekiModServer {
     //     Currently mgt.FusekiAdmin
     //  [ ] HttpAction::getContext
 
+    // == FMod_Admin
+    // [ ] See allowStartEmpty
+    //
+    // = Phase 1
+    // [ ] Indicate in-use. Set FUSEKI_SHIRO?
+    // [-] Store configuration file before assembler additions.
+    // Static resources
+    // [ ] AdminAllowed:
+    //     "--admin user=password" or "--admin localhost"
+    //     "--admin-base run/"
+    //
+    // = Phase 2
+    // Server basics => readonly - stats, ping(, metrics), GET datasets
+    //   --readonly
+    // Split into
+    //   dataset add/delete
+    //   data update
+    //   stats, and ds-list
+
+    // Admin: localhost on certain URLs
+    // /$/status  = anon
+    // /$/server  = anon
+    // /$/ping    = anon
+    // /$/metrics = anon
+    //   Does this override /$/*? in a filter?
+
+    // == FMod_localhost.
+    // [ ] localhost
+
+    // == FMod_Shiro
+    // [ ] --shiro=filename
+    // [ ] Log shiro.ini found
+    // [x] Setup admin area before FMod_Shiro?.
+    //     Set filter during prepare whenb admin setup.
+    // [x] Error if no FUSEKI_SHIRO file.
+    // [ ] FusekiServer.Builder.setShiroFile
+
     // == FMod_UI
     // [ ] Pages from a jar file.
     // [ ] Setting for the location: --ui (--base is different?)  FUSEKI_HOME?
@@ -64,58 +101,4 @@ public class NotesFusekiModServer {
     // [ ] FMod_UI - finding resources in a jar file. (current file directory, hard coded)
     // [ ] FMod_Admin - security
     // [ ] Two copies of ServerMgtConst
-
-    // == FMod_Admin
-    // Server basics => readonly - stats, ping(, metrics), GET datasets
-    //   --readonly
-    // Split into
-    //   dataset add/delete
-    //   data update
-    //   stats, and ds-list
-
-    // [ ] Separate admin general security but default admin to localhost unless Shiro.
-    //     Pass in the modules or make accessible somehow.
-    // [ ] Store configuration file before assembler additions.
-    // Static resources
-    // [ ] AdminAllowed:
-    //     "--admin user=password" or "--admin localhost"
-    //     "--admin-base run/"
-    // ?? No FUSEKI_BASE?
-
-    // Modules add command line args?
-
-    // [ ] Startup - inject arguments ArgModuleAdmin.
-    // Future - disk builds a configuration.
-    // [ ] Localhost - put in ActionCtl.
-    // [ ] Split "datasets" into read and write functions. Or test
-
-    // == FMod_localhost.
-
-    // == FMod_Shiro
-    // [ ] --shiro=filename
-    //     IF arg absent && run/shiro.ini exists ("$FUSEKI_BASE"/shiro.ini
-    //
-    // [ ] mod_shiro uses FUSEKI_SHIRO
-    // [ ] --shiro (and no run/shiro.ini?)
-    // [ ] SHIRO_FILE environment variable
-    // [ ] (optional) Log access failures.
-    // Shiro on/off
-    // Config only version (no create datasets)
-    // [ ] localhost
-
-    static public class Counter2 {
-        // Not for synchronization
-        private LongAdder counter = new LongAdder();
-
-        public Counter2()   {}
-
-        public void inc()   { counter.increment(); }
-        public void dec()   { counter.decrement(); }
-        public long value() { return counter.longValue(); }
-
-        @Override
-        public String toString() {
-            return counter.toString();
-        }
-    }
 }

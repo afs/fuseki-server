@@ -66,7 +66,7 @@ public class FMod_UI implements FusekiAutoModule {
     @Override
     public void prepare(FusekiServer.Builder builder, Set<String> datasetNames, Model configModel) {
 
-        LOG.info("Fuseki UI load");
+        //LOG.info("Fuseki UI loading");
 
         if ( builder.staticFileBase() != null ) {
             LOG.info("Static content location has already been set: " + builder.staticFileBase());
@@ -92,7 +92,7 @@ public class FMod_UI implements FusekiAutoModule {
                 .addServlet("/$/validate/data", new DataValidator())
                 .enableStats(true);
 
-        LOG.info("Fuseki UI loaded");
+        // LOG.info("Fuseki UI loaded");
     }
 
 //    if ( staticContentDir != null ) {
