@@ -48,7 +48,7 @@ class ShiroEnvironmentLoaderListener extends EnvironmentLoaderListener{
      * if a {@link ResourceBasedWebEnvironment}, check the list of configuration
      * locations, testing whether the name identified an existing resource.
      * For the first resource name found to exist, reset the {@link ResourceBasedWebEnvironment}
-     * to name that resource alone so the normal Shiro initialization
+     * to name that resource alone so the normal Shiro initialization executes.
      */
     @Override
     protected void customizeEnvironment(WebEnvironment environment) {
@@ -69,7 +69,7 @@ class ShiroEnvironmentLoaderListener extends EnvironmentLoaderListener{
                 shiroConfigLog.info(format("No Shiro file found (tried: %s)", locations));
                 return;
             }
-            shiroConfigLog.info("Shiro file: "+loc);
+            shiroConfigLog.info("Shiro INI file: "+loc);
             String[] configLocationsHere = new String[] {loc};
             env.setConfigLocations(configLocationsHere);
         }

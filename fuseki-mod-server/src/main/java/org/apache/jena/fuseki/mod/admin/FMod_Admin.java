@@ -34,7 +34,6 @@ import org.apache.jena.fuseki.build.FusekiConfig;
 import org.apache.jena.fuseki.ctl.ActionCtl;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.cmds.ServerArgs;
-import org.apache.jena.fuseki.main.sys.FusekiAutoModule;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.mgt.ActionBackup;
 import org.apache.jena.fuseki.mgt.ActionBackupList;
@@ -44,22 +43,22 @@ import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.rdf.model.Model;
 import org.slf4j.Logger;
 
-public class FMod_Admin implements FusekiAutoModule {
+public class FMod_Admin implements FusekiModule {
 
     private static FusekiModule singleton = new FMod_Admin();
     // ----
 
-    @Override
-    public void start() {}
+//    @Override
+//    public void start() {}
+//
+//    @Override
+//    public int level() {
+//        return FusekiApp.levelFModAdmin;
+//    }
 
     @Override
     public String name() {
         return "FMod Admin";
-    }
-
-    @Override
-    public int level() {
-        return 600;
     }
 
     public static FusekiModule get() {
@@ -93,7 +92,6 @@ public class FMod_Admin implements FusekiAutoModule {
     @Override
     public void serverArgsPrepare(CmdGeneral fusekiCmd, ServerArgs serverArgs) {
         String admin = fusekiCmd.getValue(argAdmin);
-        System.out.println("FMod_Admin.serverArgsPrepare: "+admin);
         if ( admin == null ) {
             return;
         }
@@ -126,7 +124,16 @@ public class FMod_Admin implements FusekiAutoModule {
 
     @Override
     public void prepare(FusekiServer.Builder builder, Set<String> datasetNames, Model configModel) {
-        FusekiApp.setup();
+        // Unpack
+        Path path = FusekiApp.setup();
+        // Shiro.
+        Path shiroIni = path.resolve(FusekiApp.DFT_SHIRO_INI);
+        if ( Files.exists(shiroIni) ) {
+            System.setProperty(FusekiApp.envFusekiShiro, shiroIni.toString());
+        } else {
+            FmtLog.info(Fuseki.configLog, "No shiro.ini: dir=%s", path);
+        }
+
         String configDir = FusekiApp.dirConfiguration.toString();
         List<DataAccessPoint> directoryDatabases = FusekiConfig.readConfigurationDirectory(configDir);
 

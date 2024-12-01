@@ -22,10 +22,15 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.fuseki.main.FusekiServer;
+import org.apache.jena.fuseki.main.sys.FusekiModules;
+import org.apache.jena.fuseki.mod.admin.FMod_Admin;
+import org.apache.jena.fuseki.mod.prometheus.FMod_Prometheus;
+import org.apache.jena.fuseki.mod.shiro.FMod_Shiro;
+import org.apache.jena.fuseki.mod.ui.FMod_UI;
+import org.apache.jena.fuseki.run.FusekiModServer;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.http.HttpOp;
 import org.apache.jena.http.auth.AuthEnv;
@@ -42,28 +47,31 @@ public class RunFusekiModServer {
 
     static {
         System.getProperties().setProperty(SystemIRIx.sysPropertyProvider, "IRI3986");
-        JenaSystem.init();
         FusekiLogging.setLogging();
+        JenaSystem.init();
     }
 
-    public static void main(String ... a) {
+//    /** Current working directory - without a trailing slash */
+//    private static String currentDirectory() {
+//        //return System.getProperty("user.dir");
+//        String x = Paths.get(".").toAbsolutePath().normalize().toString();
+//        System.out.println(x);
+//        return x;
+//    }
+
+    public static void main(String ... a) throws Exception {
         try {
-            mainx(a);
+            mainFusekiModServer(a);
+            //mainx(a);
         } catch(Throwable th) { th.printStackTrace(); }
         finally { System.exit(0); }
     }
 
-    /** Current working directory - without a trailing slash */
-    private static String currentDirectory() {
-        //return System.getProperty("user.dir");
-        String x = Paths.get(".").toAbsolutePath().normalize().toString();
-        System.out.println(x);
-        return x;
+    public static void mainFusekiModServer(String ... a) {
+        FusekiModServer.main("--shiro=shiro.ini", "--mem", "/ds");
     }
 
     public static void mainx(String ... a) {
-        System.out.println(currentDirectory());
-        System.exit(0);
 
         final boolean cleanStart = true;
 
@@ -78,12 +86,15 @@ public class RunFusekiModServer {
         }
 
         // << ---- FusekiModServer
-        //FusekiModules modules = selection;
+        FusekiModules modules = FusekiModules.create( FMod_Admin.get()
+                                                    , FMod_UI.get()
+                                                    , FMod_Shiro.get()
+                                                    , FMod_Prometheus.get()
+                   );
 
-        //FusekiModules.add(new FMod_UI());
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
         FusekiServer server = FusekiServer.create()
-                //.fusekiModules(modules)
+                .fusekiModules(modules)
                 //.add("/ds", dsg) -- not with a later create
                 .port(4040)
                 .build()
@@ -94,8 +105,12 @@ public class RunFusekiModServer {
 
     public static void client(FusekiServer server, boolean cleanStart) {
         // Try out admin functions.
-        String datasetURL = server.serverURL()+"ds";
-        String serverURL = server.serverURL()+"$/datasets";
+
+        String serverURL = server.serverURL();
+        String local = Host.getLocalHostLANAddress().getHostAddress();
+        serverURL = serverURL.replace("localhost", local);
+
+        String datasetURL = serverURL+"ds";
         String name = URLEncoder.encode("/ds", StandardCharsets.UTF_8);
         System.out.println(serverURL);
         // ----
@@ -105,7 +120,8 @@ public class RunFusekiModServer {
         //dbName=%2Fds&dbType=mem
 
         // basic auth. admin-pw
-        String adminURL = server.serverURL()+"$";
+        String adminURL = serverURL+"$";
+        // ***************************************************
         AuthEnv.get().registerUsernamePassword(URI.create(adminURL), "admin","pw");
 
         if ( cleanStart ) {

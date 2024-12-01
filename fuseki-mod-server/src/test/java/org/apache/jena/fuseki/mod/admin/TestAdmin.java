@@ -81,7 +81,7 @@ public class TestAdmin {
     // if the two databases are the same.
     static String dsTestTdb2a = "test-tdb2a";
     static String dsTestTdb2b = "test-tdb2b";
-    static String fileBase    = "testing/";
+    static String fileBase    = "testing/config/";
 
     @Before public void setLogging() {
         LogCtl.setLevel(Fuseki.backupLogName, "ERROR");
@@ -95,7 +95,7 @@ public class TestAdmin {
         LogCtl.setLevel(Fuseki.compactLogName,"WARN");
     }
 
-    // If we need to avoid depending on module autoloading:
+    // Avoid depending on module autoloading:
     private static FusekiModules theModules = FusekiModules.create
             ( FMod_Admin.get()
             , FMod_UI.get()

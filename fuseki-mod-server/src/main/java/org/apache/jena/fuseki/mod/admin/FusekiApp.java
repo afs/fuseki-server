@@ -72,6 +72,12 @@ public class FusekiApp {
     public static final String     DFT_SHIRO_INI            = "shiro.ini";
     public static final String     DFT_CONFIG               = "config.ttl";
 
+    private static int BaseFusekiAutoModuleLevel            = 500;
+    public static int levelFModAdmin                        = BaseFusekiAutoModuleLevel;
+    public static int levelFModUI                           = BaseFusekiAutoModuleLevel+10;
+    public static int levelFModShiro                        = BaseFusekiAutoModuleLevel+20;
+
+
     /** Directory for TDB databases - this is known to the assembler templates */
     public static Path        dirDatabases       = null;
 
@@ -97,6 +103,8 @@ public class FusekiApp {
     // Marks the end of successful initialization.
     /*package*/static boolean serverInitialized  = false;
 
+
+
 //    /**
 //     * Root of the Fuseki installation for fixed files.
 //     * This may be null (e.g. running inside a web application container)
@@ -107,7 +115,23 @@ public class FusekiApp {
      * Root of the varying files in this deployment. Often $PWD/run.
      * This must be writable.
      */
-    public static Path FUSEKI_BASE = null;
+    public static Path FUSEKI_BASE = set_FUSEKI_BASE();
+
+    public static String envFusekiBase = "FUSEKI_BASE";
+    public static String envFusekiShiro = "FUSEKI_SHIRO";
+
+    private static Path set_FUSEKI_BASE() {
+        // Does not guarantee existence
+        Path setting = null;
+        if ( FUSEKI_BASE == null ) {
+            String x2 = getenv("FUSEKI_BASE");
+            if ( x2 == null )
+                x2 = dftFusekiBase;
+            setting = Path.of(x2);
+        }
+        setting = setting.toAbsolutePath();
+        return setting;
+    }
 
     // Default - "run" in the current directory.
     public static final String dftFusekiBase = "run";
@@ -136,11 +160,12 @@ public class FusekiApp {
             throw new FusekiConfigException("FUSEKI_BASE exists but is not writable");
     }
 
-    static void setup() {
+    static Path setup() {
         // Command line arguments "--base" ...
         setEnvironment();
         // Format the BASE area.
         FusekiApp.ensureBaseArea(FUSEKI_BASE);
+        return FUSEKI_BASE;
     }
 
     /**

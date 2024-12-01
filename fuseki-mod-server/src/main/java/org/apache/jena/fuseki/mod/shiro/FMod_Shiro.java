@@ -18,13 +18,13 @@
 
 package org.apache.jena.fuseki.mod.shiro;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
 import jakarta.servlet.Filter;
-import jakarta.servlet.ServletContext;
+import org.apache.jena.atlas.io.IOX;
+import org.apache.jena.atlas.lib.IRILib;
 import org.apache.jena.atlas.lib.Lib;
 import org.apache.jena.cmd.ArgDecl;
 import org.apache.jena.cmd.CmdException;
@@ -33,8 +33,8 @@ import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.FusekiConfigException;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.cmds.ServerArgs;
-import org.apache.jena.fuseki.main.sys.FusekiAutoModule;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
+import org.apache.jena.fuseki.mod.admin.FusekiApp;
 import org.apache.jena.rdf.model.Model;
 import org.apache.shiro.web.servlet.ShiroFilter;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -48,7 +48,22 @@ import org.slf4j.LoggerFactory;
  * TODO
  * Configuration
  */
-public class FMod_Shiro implements FusekiAutoModule {
+public class FMod_Shiro implements FusekiModule {
+
+//    @Override
+//    public void start() {
+//        Fuseki.serverLog.info("FMod Shiro");
+//    }
+    //
+//  @Override
+//  public int level() {
+//      return FusekiApp.levelFModShiro;
+//  }
+
+    @Override
+    public String name() {
+        return "FMod Shiro";
+    }
 
     private static FusekiModule singleton = new FMod_Shiro();
     public static FusekiModule get() {
@@ -60,16 +75,21 @@ public class FMod_Shiro implements FusekiAutoModule {
 
     public static final Logger shiroConfigLog = LoggerFactory.getLogger(Fuseki.PATH + ".Shiro");
 
-    private static List<String> defaultIniFileLocations = List.of("file:shiro.ini", "file:run/shiro.ini", "file:/etc/fuseki/shiro.ini");
+    private static List<String> defaultIniFileLocations = List.of("file:shiro.ini", "file:/etc/fuseki/shiro.ini");
     private static List<String> iniFileLocations = null;
-    public static void setShiroIniLocations(List<String> shiroIniLocations) {
-        iniFileLocations = shiroIniLocations;
-    }
 
     private static ArgDecl argShiroIni = new ArgDecl(true, "shiro", "shiro-ini");
+
+    // XXX Should be a per build variable.
     private String shiroFile = null;
 
-    public FMod_Shiro() {}
+    public FMod_Shiro() {
+        this(null);
+    }
+
+    public FMod_Shiro(String shiroFile) {
+        this.shiroFile = shiroFile;
+    }
 
     // ---- If used from the command line
     @Override
@@ -82,17 +102,11 @@ public class FMod_Shiro implements FusekiAutoModule {
         if ( fusekiCmd.contains(argShiroIni) ) {
             shiroFile = fusekiCmd.getValue(argShiroIni);
             Path path = Path.of(shiroFile);
-            try {
-                if ( !fileIsUseable(path) ) {
-                    throw new CmdException("No such file: "+path);
-                }
-            } catch (FusekiConfigException ex) {
-                throw new CmdException(ex.getMessage());
-            }
+            IOX.checkReadableFile(path, CmdException::new);
         }
     }
 
-    // The filter is added in  prepare(FusekiServer.Builder serverBuilder, Set<String> datasetNames, Model configModel)
+    // The filter is added in prepare().
     // This allows other Fuseki modules, such as FMod_Admin, to setup shiro.ini.
     // FMod_Admin unpacks a default one to $FUSEKI_BASE/shiro.ini (usually "run/shiro.ini")
 
@@ -101,130 +115,58 @@ public class FMod_Shiro implements FusekiAutoModule {
 //        //Add filter.
 //    }
 
-    // ----
-
-
-    // ---- Pro-tem
-    // Add "possible value"
-    /**
-     * Determine the Shiro configuration file.
-     * If none found, return null.
-     */
-    private static String determineShiroConfigFile() {
-        // 1: Model: server??
-        // 2: Lib.getenv("FUSEKI_SHIRO");
-
-        // Not needed if FMod_admin has set FUSEKI_SHIRO
-        //   Context for build.
-        // 3: Lib.getenv("FUSEKI_BASE")+"run/shiro.ini"; -- library code: existing (in main) FusekiLib
-
-        String envFusekiShiro = Lib.getenv("FUSEKI_SHIRO");
-        if ( envFusekiShiro != null ) {
-            Path path = Path.of(envFusekiShiro);
-            if ( ! fileIsUseable(path) )
-                throw new FusekiConfigException("No such file: "+path);
-            return envFusekiShiro;
-        }
-
-//        String envFusekiBase = Lib.getenv("FUSEKI_BASE");
-//        if ( envFusekiBase != null ) {
-//            Path path= Path.of(envFusekiBase, "shiro.ini");
-//            if ( fileIsUseable(path) )
-//                return path.toString();
-//        }
-        return null;
-    }
-    // ---- Pro-tem
-
-    // XXX To IOX
-    /**
-     * Return true if the path exists, it names a regular file, and that file is readable.
-     * <p>
-     * Return false if it does not exist.
-     * <p>
-     * Throw {@link CmdException} if it exists but is not a regular file or is not readable.
-     */
-    private static boolean fileIsUseable(Path path) {
-        if ( ! Files.exists(path) )
-            return false;
-        if ( ! Files.isRegularFile(path) )
-            throw new FusekiConfigException("Path exists but is not a file: "+path);
-        if ( ! Files.isReadable(path) ) {
-            throw new FusekiConfigException("File exists but is not readable: "+path);
-        }
-        return true;
-    }
-
-    /* In jena-fuseki-webapp (WAR file) and jena-fuseki-full-jar: FUSEKI_HOME - used
-     * to find "webapp" FUSEKI_BASE - used as the administration area
-     * jena-fuseki-webapp: WAR (null, "/etc/fuseki") , STANDALONE (".", "run") , */
-
-    @Override
-    public void start() {
-        Fuseki.serverLog.info("FMod Shiro");
-    }
-
-    @Override
-    public String name() {
-        return "FMod Shiro";
-    }
-
-    @Override
-    public int level() {
-        // Early - so adding the filter puts it at the start of the chain
-        // if there is any filter overlap.
-        return 100;
-    }
-
+     /**
+      * Determine the Shiro configuration file.
+      * This applies whether command line arguments used for programmatic setup.
+      */
     @Override
     public void prepare(FusekiServer.Builder serverBuilder, Set<String> datasetNames, Model configModel) {
-        if ( shiroFile == null )
-            shiroFile = determineShiroConfigFile();
+        if ( shiroFile == null ) {
+            // Environment variable:  FUSEKI_SHIRO
+            shiroFile = Lib.getenv(FusekiApp.envFusekiShiro);
+        }
 
-        // XXX
-        // serverBuilder.shiroFile("")
+        if ( shiroFile == null ) {
+            return;
+        }
 
         if ( shiroFile != null ) {
-            Filter filter = new FusekiShiroFilter();
+            IOX.checkReadableFile(shiroFile, FusekiConfigException::new);
+            Filter filter = new FusekiShiroFilter(shiroFile);
             // This is a "before" filter.
             serverBuilder.addFilter("/*", filter);
         }
+
+        // Clear.
+        shiroFile = null;
     }
 
     /**
-     * FusekiShiroFilter, includes Shiro initialization. Fuseki is a not a webapp
-     * e.g. not a WAR file so it needs to trigger off servlet initialization.
+     * FusekiShiroFilter, includes Shiro initialization. Fuseki is a
+     * not a webapp so it needs to trigger off servlet initialization.
      */
-    private class FusekiShiroFilter extends ShiroFilter {
-        boolean runnng = false;
+    private static class FusekiShiroFilter extends ShiroFilter {
+
+        private final String shiroInitializationFile;
+
+        FusekiShiroFilter(String filename) {
+            shiroInitializationFile = IRILib.filenameToIRI(filename);
+        }
+
         @Override
         public void init() throws Exception {
-            // Can not initShiro in serverBeforeStarting()
-            // and serverAfterStarting() is too late.
-            initShiro(getServletContext());
+            // Intercept Shiro initialization.
+            List<String> locations = List.of();
+            if ( shiroInitializationFile != null ) {
+                locations = List.of(shiroInitializationFile);
+            }
+            FusekiShiroLib.shiroEnvironment(getServletContext(), locations);
             super.init();
         }
     }
 
-    // TODO Use defined name.
-    private static void initShiro(ServletContext servletContext) {
-        List<String> locations = (iniFileLocations == null) ? defaultIniFileLocations : iniFileLocations;
-        String fusekiBase = Lib.getenv("FUSEKI_BASE");
-        if ( fusekiBase != null ) {
-            Path pathShiroIni = Path.of(fusekiBase).resolve("shiro.ini");
-            if ( !Files.exists(pathShiroIni) )
-                throw new FusekiConfigException("No such file: $FUSEKI_BASE/shiro.ini (" + pathShiroIni + ")");
-            String resource = "file:" + pathShiroIni.toString();
-            locations = List.of(resource);
-        }
-        FusekiShiroLib.shiroEnvironment(servletContext, locations);
-    }
-
     @Override
     public void serverBeforeStarting(FusekiServer server) {
-
-        // shiro servlet.
-
         // Shiro requires a session handler.
         // This needs the Jetty server to have been created.
         org.eclipse.jetty.server.Server jettyServer = server.getJettyServer();

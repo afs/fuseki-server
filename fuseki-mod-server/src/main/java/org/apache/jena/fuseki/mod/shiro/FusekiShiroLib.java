@@ -18,69 +18,44 @@
 
 package org.apache.jena.fuseki.mod.shiro;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 import jakarta.servlet.ServletContext;
 import org.apache.jena.fuseki.FusekiConfigException;
-import org.apache.jena.irix.IRIs;
+import org.apache.jena.rfc3986.URIScheme;
 import org.apache.shiro.lang.io.ResourceUtils;
 import org.apache.shiro.web.env.EnvironmentLoaderListener;
 
 /*package*/ class FusekiShiroLib {
-    private static final String FILE = "file";
-
     static void shiroEnvironment(ServletContext servletContext, List<String> possibleShiroIniFiles) {
         // Shiro environment initialization, done here because we don't have webapp listeners.
         EnvironmentLoaderListener shiroListener = new ShiroEnvironmentLoaderListener(possibleShiroIniFiles);
         try {
             shiroListener.initEnvironment(servletContext);
         } catch (org.apache.shiro.config.ConfigurationException ex) {
-            ShiroEnvironmentLoaderListener.shiroConfigLog.error("Failed to initialize Shitro: "+ex.getMessage());
-            throw new FusekiConfigException(ex.getMessage(), ex);
+            ShiroEnvironmentLoaderListener.shiroConfigLog.error("Failed to initialize Shiro: "+ex.getMessage());
+            throw new FusekiConfigException(ex.getMessage());
         }
     }
+
+    private static String fileSchemePrefix = URIScheme.FILE.getPrefix();
 
     /** Look for a Shiro ini file, returning the first found, or return null */
     static String huntForShiroIni(List<String> locations) {
         for ( String loc : locations ) {
             // If file:, look for that file.
-            // If a relative name without scheme, look in FUSEKI_BASE, FUSEKI_HOME, webapp.
-            String scheme = IRIs.scheme(loc);
-
-            // Covers C:\\ as a "scheme name"
-            if ( scheme != null ) {
-                if ( scheme.equalsIgnoreCase(FILE)) {
-                    // Test file: for exists
-                    Path p = Path.of(loc.substring(FILE.length()+1));
-                    if ( ! p.toFile().exists() )
-                        continue;
-                    // Fall through.
-                }
-                // Can't test - try
-                return loc;
+            if ( loc.startsWith(fileSchemePrefix) ) {
+                Path p = Path.of(loc.substring(fileSchemePrefix.length()));
+                if ( Files.exists(p) )
+                    return loc;
+                // Ignore.
+                continue;
             }
-            // No scheme .
-            Path p = Path.of(loc);
-
-            // try "run/" area.
-
-
-//            String fn = resolve(FusekiEnv.FUSEKI_BASE, p);
-//            if ( fn != null )
-//                return "file://"+fn;
-//            fn = resolve(FusekiEnv.FUSEKI_HOME, p);
-//            if ( fn != null )
-//                return "file://"+fn;
-
-            // Try in webapp.
-
-            try ( InputStream is = ResourceUtils.getInputStreamForPath(loc); ) {
-                boolean exists = (is != null );
+            // No scheme. May be a classpath resource.
+            if ( ResourceUtils.resourceExists(loc) )
                 return loc;
-            } catch (IOException e) { }
         }
         return null;
     }

@@ -1,5 +1,0 @@
-org.apache.jena.fuseki.mod.admin.FMod_Admin
-org.apache.jena.fuseki.mod.blank.FMod_BLANK
-org.apache.jena.fuseki.mod.prometheus.FMod_Prometheus
-org.apache.jena.fuseki.mod.shiro.FMod_Shiro
-org.apache.jena.fuseki.mod.ui.FMod_UI
