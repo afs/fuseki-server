@@ -65,9 +65,8 @@ public class FMod_Shiro implements FusekiModule {
         return "FMod Shiro";
     }
 
-    private static FusekiModule singleton = new FMod_Shiro();
-    public static FusekiModule get() {
-        return singleton;
+    public static FMod_Shiro create() {
+        return new FMod_Shiro();
     }
 
     // Assumes the whole system is "Shiro".

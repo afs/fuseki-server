@@ -123,32 +123,27 @@ public class FusekiApp {
     private static Path set_FUSEKI_BASE() {
         // Does not guarantee existence
         Path setting = null;
-        if ( FUSEKI_BASE == null ) {
-            String x2 = getenv("FUSEKI_BASE");
-            if ( x2 == null )
-                x2 = dftFusekiBase;
-            setting = Path.of(x2);
-        }
+        if ( FUSEKI_BASE == null )
+            setting = calc_FUSEKI_BASE();
         setting = setting.toAbsolutePath();
         return setting;
+    }
+
+    private static Path calc_FUSEKI_BASE() {
+        String valueFusekiBase = getenv("FUSEKI_BASE");
+        if ( valueFusekiBase == null )
+            valueFusekiBase = dftFusekiBase;
+        return Path.of(valueFusekiBase);
     }
 
     // Default - "run" in the current directory.
     public static final String dftFusekiBase = "run";
 
     static void setEnvironment() {
-        if ( FUSEKI_BASE == null ) {
-            String x2 = getenv("FUSEKI_BASE");
-            if ( x2 == null )
-                x2 = dftFusekiBase;
-            FUSEKI_BASE = Path.of(x2);
-        }
-
-        FUSEKI_BASE = FUSEKI_BASE.toAbsolutePath();
+        if ( FUSEKI_BASE == null )
+            FUSEKI_BASE = set_FUSEKI_BASE();
 
         FmtLog.info(Fuseki.configLog, "FUSEKI_BASE=%s", FUSEKI_BASE);
-        if ( Files.isRegularFile(FUSEKI_BASE) )
-            throw new FusekiConfigException("FUSEKI_BASE exists but is a file");
         if ( ! Files.exists(FUSEKI_BASE) ) {
             try {
                 Files.createDirectories(FUSEKI_BASE);
@@ -156,8 +151,7 @@ public class FusekiApp {
                 throw new FusekiConfigException("Failed to create FUSEKI_BASE: "+FUSEKI_BASE);
             }
         }
-        if ( ! Files.isWritable(FUSEKI_BASE) )
-            throw new FusekiConfigException("FUSEKI_BASE exists but is not writable");
+        // Further checks in ensureBaseArea
     }
 
     static Path setup() {
@@ -193,9 +187,9 @@ public class FusekiApp {
 
 //        // Copy missing files into FUSEKI_BASE
         // Interacts with FMod_Shiro.
-        if ( Lib.getenv("FUSEKI_SHIRO") == null ) {
+        if ( Lib.getenv(FusekiApp.envFusekiShiro) == null ) {
             copyFileIfMissing(null, DFT_SHIRO_INI, FUSEKI_BASE);
-            System.setProperty("FUSEKI_SHIRO", DFT_SHIRO_INI);
+            System.setProperty(FusekiApp.envFusekiShiro, FUSEKI_BASE.resolve(DFT_SHIRO_INI).toString());
         }
 
         copyFileIfMissing(null, DFT_CONFIG, FUSEKI_BASE);
@@ -330,7 +324,7 @@ public class FusekiApp {
 
     public static void addGlobals(Map<String, String> params) {
         if ( params == null ) {
-            Fuseki.configLog.warn("FusekAppEnv.addGlobals : params is null", new Throwable());
+            Fuseki.configLog.warn("FusekiApp.addGlobals : params is null", new Throwable());
             return;
         }
 

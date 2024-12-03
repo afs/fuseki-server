@@ -23,11 +23,11 @@ import static org.apache.jena.fuseki.server.ServerConst.opPing;
 import static org.apache.jena.fuseki.server.ServerConst.opStats;
 import static org.apache.jena.http.HttpOp.*;
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpRequest.BodyPublisher;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.nio.file.Path;
@@ -36,7 +36,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.jena.atlas.io.IO;
@@ -47,27 +49,27 @@ import org.apache.jena.atlas.json.JsonValue;
 import org.apache.jena.atlas.junit.AssertExtra;
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.atlas.lib.Lib;
-import org.apache.jena.atlas.lib.NotImplemented;
 import org.apache.jena.atlas.logging.LogCtl;
 import org.apache.jena.atlas.web.HttpException;
 import org.apache.jena.atlas.web.TypedInputStream;
 import org.apache.jena.fuseki.Fuseki;
+import org.apache.jena.fuseki.ctl.ActionSleep;
 import org.apache.jena.fuseki.ctl.JsonConstCtl;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.fuseki.mgt.ServerMgtConst;
-import org.apache.jena.fuseki.mod.prometheus.FMod_Prometheus;
-import org.apache.jena.fuseki.mod.ui.FMod_UI;
 import org.apache.jena.fuseki.server.ServerConst;
 import org.apache.jena.fuseki.test.HttpTest;
-import org.apache.jena.http.auth.AuthEnv;
 import org.apache.jena.riot.WebContent;
 import org.apache.jena.sparql.core.DatasetGraph;
 import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.web.HttpSC;
 import org.awaitility.Awaitility;
 
-/** Tests of the admin functionality */
+/**
+ *  Tests of the admin functionality using a pre-configured dataset
+ *  {@link TestTemplateAddDataset}.
+ */
 public class TestAdmin {
 
     // Name of the dataset in the assembler file.
@@ -83,70 +85,67 @@ public class TestAdmin {
     static String dsTestTdb2b = "test-tdb2b";
     static String fileBase    = "testing/config/";
 
-    @Before public void setLogging() {
+    private String serverURL = null;
+    private FusekiServer server = null;
+
+    @BeforeEach public void startServer() {
+        System.setProperty("FUSEKI_BASE", "target/run");
+        FileOps.clearAll("target/run");
+
+        server = createServerForTest();
+        serverURL = server.serverURL();
+        //String adminURL = server.serverURL()+"$";
+        //AuthEnv.get().registerUsernamePassword(adminURL, "admin","pw");
+    }
+
+    // Exactly the module under test
+    private static FusekiModules moduleSetup() {
+        return FusekiModules.create(FMod_Admin.create());
+    }
+
+    private FusekiServer createServerForTest() {
+        FusekiModules modules = moduleSetup();
+        DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
+        FusekiServer testServer = FusekiServer.create()
+                .fusekiModules(modules)
+                .port(0)
+                .add(datasetName(), dsg)
+                .addServlet("/$/sleep/*", new ActionSleep())
+                .build()
+                .start();
+        return testServer;
+    }
+
+    @AfterEach public void stopServer() {
+        if ( server != null )
+            server.stop();
+        serverURL = null;
+        // Clearup FMod_Shiro.
+        System.getProperties().remove(FusekiApp.envFusekiShiro);
+    }
+
+    protected String urlRoot() {
+        return serverURL;
+    }
+
+    protected String datasetName() {
+        return "dataset";
+    }
+
+    protected String datasetPath() {
+        return "/"+datasetName();
+    }
+
+    @BeforeEach public void setLogging() {
         LogCtl.setLevel(Fuseki.backupLogName, "ERROR");
         LogCtl.setLevel(Fuseki.compactLogName,"ERROR");
         Awaitility.setDefaultPollDelay(20,TimeUnit.MILLISECONDS);
         Awaitility.setDefaultPollInterval(50,TimeUnit.MILLISECONDS);
     }
 
-    @After public void unsetLogging() {
+    @AfterEach public void unsetLogging() {
         LogCtl.setLevel(Fuseki.backupLogName, "WARN");
         LogCtl.setLevel(Fuseki.compactLogName,"WARN");
-    }
-
-    // Avoid depending on module autoloading:
-    private static FusekiModules theModules = FusekiModules.create
-            ( FMod_Admin.get()
-            , FMod_UI.get()
-            //, FMod_Shiro.get()
-            , FMod_Prometheus.get());
-
-    private String serverURL = null;
-    private FusekiServer server = null;
-
-//    public static final String urlRoot()        { return "http://localhost:"+port()+"/"; }
-//    public static final String datasetName()    { return "dataset"; }
-//    public static final String datasetPath()    { return "/"+datasetName(); }
-//    public static final String urlDataset()     { return "http://localhost:"+port()+datasetPath(); }
-//
-//    public static final String serviceUpdate()  { return "http://localhost:"+port()+datasetPath()+"/update"; }
-//    public static final String serviceQuery()   { return "http://localhost:"+port()+datasetPath()+"/query"; }
-//    public static final String serviceGSP()     { return "http://localhost:"+port()+datasetPath()+"/data"; }
-
-    @Before public void startServer() {
-        System.setProperty("FUSEKI_BASE", "target/run");
-        FileOps.clearAll("target/run");
-
-        FusekiModules modules = theModules;
-
-        DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
-        server = FusekiServer.create()
-                .fusekiModules(modules)
-                .port(0)
-                .add("/dataset", dsg)   //
-                .build()
-                .start();
-        serverURL = server.serverURL();
-        String adminURL = server.serverURL()+"$";
-        AuthEnv.get().registerUsernamePassword(URI.create(adminURL), "admin","pw");
-    }
-
-    @After public void stopServer() {
-        if ( server != null )
-            server.stop();
-    }
-
-    private String urlRoot() {
-        return serverURL;
-    }
-
-    public static String datasetName() {
-        return "dataset";
-    }
-
-    public static String datasetPath() {
-        throw new NotImplemented();
     }
 
     // --- Ping
@@ -320,39 +319,6 @@ public class TestAdmin {
         HttpTest.expect404( ()-> httpDelete(urlRoot()+"$/"+opDatasets+"/"+name) );
     }
 
-//    // ---- Active/Offline.
-//
-//    @Test public void state_1() {
-//        // Add one
-//        addTestDataset();
-//        try {
-//            checkExists(dsTest);
-//
-//            httpPost(urlRoot()+"$/"+opDatasets+"/"+dsTest+"?state=offline");
-//
-//            checkExistsNotActive(dsTest);
-//
-//            httpPost(urlRoot()+"$/"+opDatasets+"/"+dsTest+"?state=active");
-//
-//            checkExists(dsTest);
-//        } finally {
-//            deleteDataset(dsTest);
-//        }
-//    }
-//
-//    @Test public void state_2() {
-//        addTestDataset();
-//        httpPost(urlRoot()+"$/"+opDatasets+"/"+dsTest+"?state=offline");
-//        deleteDataset(dsTest);
-//        checkNotThere(dsTest);
-//    }
-//
-//    @Test public void state_3() {
-//        addTestDataset();
-//        HttpTest.expect404(()->httpPost(urlRoot()+"$/"+opDatasets+"/DoesNotExist?state=offline"));
-//        deleteDataset(dsTest);
-//    }
-
     // ---- Backup
 
     @Test public void create_backup_1() {
@@ -363,7 +329,7 @@ public class TestAdmin {
         } finally {
             waitForTasksToFinish(1000, 10, 20000);
         }
-        Assert.assertNotNull(id);
+        assertNotNull(id);
         checkInTasks(id);
 
         // Check a backup was created
@@ -372,13 +338,13 @@ public class TestAdmin {
             JsonValue v = JSON.parseAny(in);
             assertNotNull(v.getAsObject().get("backups"));
             JsonArray a = v.getAsObject().get("backups").getAsArray();
-            Assert.assertEquals(1, a.size());
+            assertEquals(1, a.size());
         }
 
         JsonValue task = getTask(id);
-        Assert.assertNotNull(id);
+        assertNotNull(id);
         // Expect task success
-        Assert.assertTrue("Expected task to be marked as successful", task.getAsObject().getBoolean(JsonConstCtl.success));
+        assertTrue(task.getAsObject().getBoolean(JsonConstCtl.success), "Expected task to be marked as successful");
     }
 
     @Test
@@ -414,7 +380,7 @@ public class TestAdmin {
             } finally {
                 waitForTasksToFinish(1000, 500, 20_000);
             }
-            Assert.assertNotNull(id);
+            assertNotNull(id);
             checkInTasks(id);
 
             JsonValue task = getTask(id);
@@ -422,15 +388,16 @@ public class TestAdmin {
             // The result assertion is throwing NPE occasionally on some heavily loaded CI servers.
             // This may be because of server or test code encountering a very long wait.
             // These next statements check the assumed structure of the return.
-            Assert.assertNotNull("Task value", task);
+            assertNotNull(task, "Task value");
             JsonObject obj = task.getAsObject();
-            Assert.assertNotNull("Task.getAsObject()", obj);
+            assertNotNull(obj, "Task.getAsObject()");
             // Provoke code to get a stacktrace.
             obj.getBoolean(JsonConstCtl.success);
             // ----
             // The assertion we really wanted to check.
             // Check task success
-            Assert.assertTrue("Expected task to be marked as successful", task.getAsObject().getBoolean(JsonConstCtl.success));
+            assertTrue(task.getAsObject().getBoolean(JsonConstCtl.success),
+                       "Expected task to be marked as successful");
         } finally {
             deleteDataset(testDB);
         }
@@ -443,8 +410,7 @@ public class TestAdmin {
     }
 
     private void assumeNotWindows() {
-        if (SystemUtils.IS_OS_WINDOWS)
-            throw new AssumptionViolatedException("Test may be unstable on Windows due to inability to delete memory-mapped files");
+        assumeFalse(SystemUtils.IS_OS_WINDOWS, "Test may be unstable on Windows due to inability to delete memory-mapped files");
     }
 
     // ---- Server
@@ -591,7 +557,14 @@ public class TestAdmin {
         }
     }
 
-    private void assertEqualsIgnoreCase(String contenttypejson, String contentType) {}
+    private void assertEqualsIgnoreCase(String expected, String actual) {
+        if ( expected == null && actual == null )
+            return;
+        if ( expected == null || actual == null )
+            fail("Expected: "+expected+" Got: "+actual);
+        if ( ! expected.equalsIgnoreCase(actual) )
+            fail("Expected: "+expected+" Got: "+actual);
+    }
 
     private JsonValue getTask(String taskId) {
         String url = urlRoot()+"$/tasks/"+taskId;
@@ -695,7 +668,7 @@ public class TestAdmin {
                found++;
            }
         }
-       assertEquals("Occurrence of taskId count", 1, found);
+       assertEquals(1, found, "Occurrence of taskId count");
     }
 
    private List<String> runningTasks(String... x) {

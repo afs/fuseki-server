@@ -41,7 +41,7 @@
   <dependencies>
 
     <dependency>
-      <groupId>org.apache.jena.fuseki</groupId>
+      <groupId>org.apache.jena</groupId>
       <artifactId>fuseki-mod-server</artifactId>
       <version>${project.version}</version>
     </dependency>

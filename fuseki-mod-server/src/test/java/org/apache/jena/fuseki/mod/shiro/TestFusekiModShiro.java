@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.jena.fuseki.mod;
+package org.apache.jena.fuseki.mod.shiro;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -26,18 +26,18 @@ import java.net.Authenticator;
 import java.net.http.HttpClient;
 import java.util.regex.Pattern;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.apache.jena.atlas.logging.LogCtl;
 import org.apache.jena.atlas.net.Host;
 import org.apache.jena.atlas.web.HttpException;
-import org.apache.jena.fuseki.Fuseki;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.cmds.FusekiMain;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.fuseki.mod.admin.FusekiApp;
-import org.apache.jena.fuseki.mod.shiro.FMod_Shiro;
 import org.apache.jena.fuseki.system.FusekiLogging;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.http.HttpEnv;
@@ -49,43 +49,52 @@ import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sparql.exec.http.GSP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTP;
 
-public class TestFusekiServer {
-    // FusekiModServer
-
-    // Test Shiro
-    // Test admin function availability
-    // Test metrics availability
-    // Test --admin--adminArea=run
-
-    // Test Environment variables
-
+public class TestFusekiModShiro {
     static final String unlocal = Host.getHostAddress();
     static final String localRE = Pattern.quote("localhost");
 
     static {
-        //JenaSystem.init();
-        //System.getProperties().setProperty(FusekiLogging.logLoggingProperty, "true");
-        // Finds file:log4j.properties first.
         FusekiLogging.setLogging();
-        LogCtl.disable(Fuseki.serverLog);
-        LogCtl.disable(Fuseki.actionLog);
-        LogCtl.disable(FMod_Shiro.shiroConfigLog);
+        // Incase it is finding file:log4j.properties first.
+//        LogCtl.disable(Fuseki.serverLog);
+//        LogCtl.disable(Fuseki.actionLog);
+//        LogCtl.disable(FMod_Shiro.shiroConfigLog);
     }
 
-    String unlocalhost(FusekiServer server, String dataset) {
+    @BeforeEach void before() {
+        System.getProperties().remove(FusekiApp.envFusekiShiro);
+        AuthEnv.get().clearAuthEnv();
+    }
+
+    @AfterEach void after() {
+        AuthEnv.get().clearAuthEnv();
+    }
+
+    @AfterAll static void afterAll() {
+        System.getProperties().remove(FusekiApp.envFusekiShiro);
+    }
+
+    private String unlocalhost(FusekiServer server, String dataset) {
         String local  = server.datasetURL(dataset);
         if ( unlocal != null )
             local = local.replaceFirst(localRE, unlocal);
         return local;
     }
 
+    /** Builder for a server with Shiro */
+    private FusekiServer.Builder serverBuilderWithShiro(String filename) {
+        System.getProperties().setProperty(FusekiApp.envFusekiShiro, filename);
+        FusekiModules modules = FusekiModules.create(FMod_Shiro.create());
+        return FusekiServer.create()
+                .port(0)
+                .fusekiModules(modules);
+    }
+
     @Test public void access_localhost() {
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
-        FusekiModules modules = FusekiModules.create(FMod_Shiro.get());
+        FusekiModules modules = FusekiModules.create(FMod_Shiro.create());
         System.getProperties().setProperty(FusekiApp.envFusekiShiro, "testing/shiro/shiro_localhost.ini");
-        FusekiServer server = FusekiServer.create()
-                .port(0)
-                .fusekiModules(modules)
+        FusekiServer server = serverBuilderWithShiro("testing/shiro/shiro_localhost.ini")
                 .add("/local/ds", dsg)
                 .add("/public/ds", dsg)
                 .build();
@@ -98,17 +107,16 @@ public class TestFusekiServer {
             assertEquals(403, httpEx.getStatusCode(), "Expected HTTP 403");
 
             attemptByLocalhost(server, dsLocal);
-        } finally { server.stop(); }
+        } finally {
+            server.stop();
+            AuthEnv.get().clearAuthEnv();
+        }
     }
 
     @Test public void access_userPassword() {
         String dsname = "/ds";
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
-        FMod_Shiro fmodShiro = new FMod_Shiro("testing/shiro/shiro_userpassword.ini");
-        FusekiModules modules = FusekiModules.create(fmodShiro);
-        FusekiServer server = FusekiServer.create()
-                .port(0)
-                .fusekiModules(modules)
+        FusekiServer server = serverBuilderWithShiro("testing/shiro/shiro_userpassword.ini")
                 .add(dsname, dsg)
                 .enablePing(true)
                 .build();
@@ -144,25 +152,33 @@ public class TestFusekiServer {
                 Authenticator authenticator = AuthLib.authenticator("admin", "pw");
                 HttpClient httpClient = HttpEnv.httpClientBuilder().authenticator(authenticator).build();
                 HttpOp.httpGetString(httpClient, server.serverURL()+"$/ping");
+                AuthEnv.get().unregisterUsernamePassword(server.serverURL());
             }
-        } finally { server.stop(); }
+
+            {
+                // Bad password
+                AuthEnv.get().registerUsernamePassword(server.serverURL(), "user1", "passwd2");
+                HttpException httpEx = assertThrows(HttpException.class, ()->attemptByLocalhost(server, dsname));
+                assertEquals(401, httpEx.getStatusCode(), "Expected HTTP 401");
+                AuthEnv.get().unregisterUsernamePassword(server.serverURL());
+            }
+
+        } finally {
+            server.stop();
+            AuthEnv.get().clearAuthEnv();
+        }
     }
 
     @Test public void shiroByCommandLine() {
         String dsname = "/ds";
-        // Why does this need a fresh customizer?
-        FusekiModule fmod = new FMod_Shiro();
+        FusekiModule fmod = FMod_Shiro.create();
         FusekiMain.addCustomiser(fmod);
 
         // And also a module!
-
         FusekiServer server = FusekiMain.builder("--port=0", "--shiro=testing/shiro/shiro_userpassword.ini", "--mem", dsname)
                 // Must be same instance.
                 .fusekiModules(FusekiModules.create(fmod))
                 .build();
-
-        //FusekiServer server = FusekiMain.builder("--port=0", "--shiro=testing/shiro/shiro_userpassword.ini", "--mem", dsname).build();
-
         server.start();
         try {
          // No user-password

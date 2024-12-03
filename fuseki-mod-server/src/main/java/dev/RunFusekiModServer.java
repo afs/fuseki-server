@@ -24,6 +24,7 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.jena.atlas.lib.FileOps;
+import org.apache.jena.atlas.logging.LogCtl;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.sys.FusekiModules;
 import org.apache.jena.fuseki.mod.admin.FMod_Admin;
@@ -47,7 +48,8 @@ public class RunFusekiModServer {
 
     static {
         System.getProperties().setProperty(SystemIRIx.sysPropertyProvider, "IRI3986");
-        FusekiLogging.setLogging();
+        System.getProperties().setProperty(LogCtl.log4j2ConfigFileProperty, "file:x-log4j2.properties");
+        FusekiLogging.setLogging(false);
         JenaSystem.init();
     }
 
@@ -68,7 +70,7 @@ public class RunFusekiModServer {
     }
 
     public static void mainFusekiModServer(String ... a) {
-        FusekiModServer.main("--shiro=shiro.ini", "--mem", "/ds");
+        FusekiModServer.main();//"--shiro=shiro.ini", "--mem", "/ds");
     }
 
     public static void mainx(String ... a) {
@@ -86,9 +88,9 @@ public class RunFusekiModServer {
         }
 
         // << ---- FusekiModServer
-        FusekiModules modules = FusekiModules.create( FMod_Admin.get()
+        FusekiModules modules = FusekiModules.create( FMod_Admin.create()
                                                     , FMod_UI.get()
-                                                    , FMod_Shiro.get()
+                                                    , FMod_Shiro.create()
                                                     , FMod_Prometheus.get()
                    );
 

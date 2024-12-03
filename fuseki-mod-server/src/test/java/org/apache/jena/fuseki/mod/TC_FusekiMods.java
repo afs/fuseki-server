@@ -21,18 +21,21 @@ package org.apache.jena.fuseki.mod;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
+import org.apache.jena.fuseki.mod.metrics.TestModPrometheus;
 import org.apache.jena.fuseki.mod.admin.TestAdmin;
-import org.apache.jena.fuseki.mod.admin.TestAdminAPI;
+import org.apache.jena.fuseki.mod.admin.TestTemplateAddDataset;
+import org.apache.jena.fuseki.mod.shiro.TestFusekiModShiro;
 
 @Suite
-@SelectClasses({TestAdmin.class, TestAdminAPI.class,
-    // Admin
-    // Shiro
+@SelectClasses({
+    TestAdmin.class,
+    TestTemplateAddDataset.class,
     // UI
+
     // Prometheus
-
-    TestFusekiServer.class
-
+    TestModPrometheus.class,
+    // Apache Shiro
+    TestFusekiModShiro.class
 })
 public class TC_FusekiMods {
     public TC_FusekiMods() {}

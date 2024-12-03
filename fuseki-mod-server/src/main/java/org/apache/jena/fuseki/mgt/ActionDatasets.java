@@ -138,8 +138,6 @@ public class ActionDatasets extends ActionContainerItem {
                 else
                     assemblerFromBody(action, dest);
 
-                AssemblerUtils.addRegistered(model);
-
                 // ----
                 // Keep a persistent copy immediately.  This is not used for
                 // anything other than being "for the record".
@@ -147,6 +145,10 @@ public class ActionDatasets extends ActionContainerItem {
                 try ( OutputStream outCopy = IO.openOutputFile(systemFileCopy) ) {
                     RDFDataMgr.write(outCopy, model, Lang.TURTLE);
                 }
+
+                // Add the dataset and graph wiring.
+                AssemblerUtils.addRegistered(model);
+
                 // ----
                 // Process configuration.
 
@@ -278,32 +280,6 @@ public class ActionDatasets extends ActionContainerItem {
         String s = action.getRequestParameter("state");
         if ( s == null || s.isEmpty() )
             ServletOps.errorBadRequest("No state change given");
-
-        // [ADMIN]
-//        // setDatasetState is a transaction on the persistent state of the server.
-//        if ( s.equalsIgnoreCase("active") ) {
-//            action.log.info(format("[%d] REBUILD DATASET %s", action.id, name));
-//            setDatasetState(name, FusekiVocab.stateActive);
-//            dSrv.goActive();
-//            // DatasetGraph dsg = ????;
-//            //dSrv.activate(dsg);
-//            //dSrv.activate();
-//        } else if ( s.equalsIgnoreCase("offline") ) {
-//            action.log.info(format("[%d] OFFLINE DATASET %s", action.id, name));
-//            //DataAccessPoint access = action.getDataAccessPoint();
-//            //access.goOffline();
-//            dSrv.goOffline();  // Affects the target of the name.
-//            setDatasetState(name, FusekiVocab.stateOffline);
-//            //dSrv.offline();
-//        } else if ( s.equalsIgnoreCase("unlink") ) {
-//            action.log.info(format("[%d] UNLINK ACCESS NAME %s", action.id, name));
-//            //DataAccessPoint access = action.getDataAccessPoint();
-//            ServletOps.errorNotImplemented("unlink: dataset"+name);
-//            //access.goOffline();
-//            // Registry?
-//        }
-//        else
-//            ServletOps.errorBadRequest("State change operation '"+s+"' not recognized");
         return null;
     }
 
@@ -438,11 +414,14 @@ public class ActionDatasets extends ActionContainerItem {
         //action.log.info(format("[%d] Create database : name = %s, type = %s", action.id, dbName, dbType ));
 
         String template = dbTypeToTemplate.get(dbType.toLowerCase(Locale.ROOT));
-        if ( template == null )
-            ServletOps.errorBadRequest(format("dbType can be only '%s', '%s' or '%s'", tDatabaseTDB, tDatabaseTDB2, tDatabaseMem));
+        if ( template == null ) {
+            List<String> keys = new ArrayList<>(dbTypeToTemplate.keySet());
+            Collections.sort(keys);
+            ServletOps.errorBadRequest(format("dbType can be only one of %s", keys));
+        }
 
-        String syntax = TemplateFunctions.templateFile(template, params, Lang.TTL);
-        RDFParser.create().source(new StringReader(syntax)).base("http://base/").lang(Lang.TTL).parse(dest);
+        String instance = TemplateFunctions.templateFile(template, params, Lang.TTL);
+        RDFParser.create().source(new StringReader(instance)).base("http://base/").lang(Lang.TTL).parse(dest);
     }
 
     private static void assemblerFromUpload(HttpAction action, StreamRDF dest) {

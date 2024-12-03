@@ -61,7 +61,6 @@ public class FMod_UI implements FusekiModule {
         return "FMod UI";
     }
 
-
     @Override
     public void prepare(FusekiServer.Builder builder, Set<String> datasetNames, Model configModel) {
 
@@ -115,7 +114,6 @@ public class FMod_UI implements FusekiModule {
                 .addServlet("/$/validate/iri", new IRIValidator())
                 .addServlet("/$/validate/data", new DataValidator())
                 .enableStats(true);
-
         // LOG.info("Fuseki UI loaded");
     }
 

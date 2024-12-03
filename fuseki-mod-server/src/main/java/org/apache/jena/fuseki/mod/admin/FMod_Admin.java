@@ -61,8 +61,8 @@ public class FMod_Admin implements FusekiModule {
         return "FMod Admin";
     }
 
-    public static FusekiModule get() {
-        return singleton;
+    public static FMod_Admin create() {
+        return new FMod_Admin();
     }
 
     public FMod_Admin() {}
@@ -157,19 +157,21 @@ public class FMod_Admin implements FusekiModule {
         // Security is performed by FMod_Shiro.
         ActionCtl actionBackup = new ActionBackup();
         builder
-                .addServlet("/$/datasets", new ActionDatasets())
+                .addServlet("/$/datasets/*", new ActionDatasets())
                 .addServlet("/$/server", new ActionServerStatus())
-                .addServlet("/$/backup", actionBackup)
-                .addServlet("/$/backups", actionBackup)
+                .addServlet("/$/backup/*", actionBackup)
+                .addServlet("/$/backups/*", actionBackup)
                 .addServlet("/$/backups-list", new ActionBackupList())
 
-                .enablePing(true)
+                // Enables the task subsystem and is also called by enableCompact
+                .enableTasks(true)
+
+                // Can also be enabled by FMod_UI
                 .enableStats(true)
-                // Not required but helpful.
+                .enablePing(true)
                 .enableCompact(true)
-                // Module
-                //.enableMetrics(true)
-                .enableTasks(true);
+                ;
+
 
         LOG.info("Fuseki Admin loaded");
     }
