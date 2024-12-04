@@ -126,19 +126,22 @@ public class FMod_Admin implements FusekiModule {
     public void prepare(FusekiServer.Builder builder, Set<String> datasetNames, Model configModel) {
         // Unpack
         Path path = FusekiApp.setup();
+
+        FmtLog.info(LOG, "Fuseki Admin: %s", path);
+
         // Shiro.
         Path shiroIni = path.resolve(FusekiApp.DFT_SHIRO_INI);
         if ( Files.exists(shiroIni) ) {
             System.setProperty(FusekiApp.envFusekiShiro, shiroIni.toString());
         } else {
-            FmtLog.info(Fuseki.configLog, "No shiro.ini: dir=%s", path);
+            FmtLog.info(LOG, "No shiro.ini: dir=%s", path);
         }
 
         String configDir = FusekiApp.dirConfiguration.toString();
         List<DataAccessPoint> directoryDatabases = FusekiConfig.readConfigurationDirectory(configDir);
 
         if ( directoryDatabases.isEmpty() )
-            FmtLog.info(Fuseki.configLog, "No databases: dir=%s", configDir);
+            FmtLog.info(LOG, "No databases: dir=%s", configDir);
         else {
             directoryDatabases.forEach(dap -> FmtLog.info(Fuseki.configLog, "Database: %s", dap.getName()));
         }
@@ -146,7 +149,7 @@ public class FMod_Admin implements FusekiModule {
         directoryDatabases.forEach(db -> {
             String dbName = db.getName();
             if ( datasetNames.contains(dbName) ) {
-                Fuseki.configLog.warn(String.format("Database '%s' already added to the Fuseki server builder", dbName));
+                FmtLog.warn(LOG, "Database '%s' already added to the Fuseki server builder", dbName);
                 // ?? builder.remove(dbName);
             }
             builder.add(dbName, db.getDataService());
@@ -171,8 +174,5 @@ public class FMod_Admin implements FusekiModule {
                 .enablePing(true)
                 .enableCompact(true)
                 ;
-
-
-        LOG.info("Fuseki Admin loaded");
     }
 }

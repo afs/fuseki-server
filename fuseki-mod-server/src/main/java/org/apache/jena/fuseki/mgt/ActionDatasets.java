@@ -128,8 +128,8 @@ public class ActionDatasets extends ActionContainerItem {
         synchronized (FusekiAdmin.systemLock) {
             try {
                 // Where to build the templated service/database.
-                Model model = ModelFactory.createDefaultModel();
-                StreamRDF dest = StreamRDFLib.graph(model.getGraph());
+                Model descriptionModel = ModelFactory.createDefaultModel();
+                StreamRDF dest = StreamRDFLib.graph(descriptionModel.getGraph());
 
                 if ( hasParams || WebContent.isHtmlForm(ct) )
                     assemblerFromForm(action, dest);
@@ -143,10 +143,14 @@ public class ActionDatasets extends ActionContainerItem {
                 // anything other than being "for the record".
                 systemFileCopy = FusekiApp.dirSystemFileArea.resolve(uuid.toString()).toString();
                 try ( OutputStream outCopy = IO.openOutputFile(systemFileCopy) ) {
-                    RDFDataMgr.write(outCopy, model, Lang.TURTLE);
+                    RDFDataMgr.write(outCopy, descriptionModel, Lang.TURTLE);
                 }
 
-                // Add the dataset and graph wiring.
+                // ----
+                // Add the dataset and graph wiring for assemblers
+                Model model = ModelFactory.createDefaultModel();
+                model.add(descriptionModel);
+                // See AssemblerUtils.readAssemblerFile(String filename)
                 AssemblerUtils.addRegistered(model);
 
                 // ----
@@ -191,7 +195,7 @@ public class ActionDatasets extends ActionContainerItem {
 
                 // Write to configuration directory.
                 try ( OutputStream outCopy = IO.openOutputFile(configFile) ) {
-                    RDFDataMgr.write(outCopy, model, Lang.TURTLE);
+                    RDFDataMgr.write(outCopy, descriptionModel, Lang.TURTLE);
                 }
 
                 // Need to be in Resource space at this point.

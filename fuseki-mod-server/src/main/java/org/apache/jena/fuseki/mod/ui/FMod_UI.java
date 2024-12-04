@@ -85,14 +85,6 @@ public class FMod_UI implements FusekiModule {
             return;
         }
 
-        // Simplify name.
-        String displayName = uiAppLocation;
-        if ( uiAppLocation.startsWith("jar:") ) {
-            displayName = displayName.replaceFirst("jar:.*/([^/!]*!.*)", "jar:$1");
-        }
-
-        FmtLog.info(this.getClass(), "UI Base = %s", displayName);
-
         // To have custom content and the UI, unpack the jar for the UI,
         // place under $FUSEKI_BASE/webapp, then add custom content files.
 
@@ -135,7 +127,10 @@ public class FMod_UI implements FusekiModule {
 
         String r = fromClasspath(resourceName);
         if ( r != null ) {
-            LOG.info("Fuseki UI - class loader resource");
+            // Simplify name.
+            String displayName = r;
+            if ( displayName.startsWith("jar:") )
+            FmtLog.info(LOG, "UI Base = %s", displayName);
             return r;
         }
 
