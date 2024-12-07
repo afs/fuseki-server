@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+
+echo "==== fuseki-mod-server"
+( cd fuseki-mod-server; mvn clean install )
+
+echo "==== fuseki-system"
+( cd fuseki-system; mvn clean package )
+
+echo "==== fuseki-server.jar"
+rm fuseki-server.jar
+cp fuseki-system/target/fuseki-system-*.jar fuseki-server.jar

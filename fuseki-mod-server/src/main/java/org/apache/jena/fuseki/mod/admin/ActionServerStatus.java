@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.jena.fuseki.mod.other;
+package org.apache.jena.fuseki.mod.admin;
 
 import static org.apache.jena.riot.WebContent.charsetUTF8;
 import static org.apache.jena.riot.WebContent.contentTypeJSON;

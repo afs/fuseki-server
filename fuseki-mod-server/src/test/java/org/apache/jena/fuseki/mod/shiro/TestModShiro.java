@@ -49,7 +49,7 @@ import org.apache.jena.sparql.core.DatasetGraphFactory;
 import org.apache.jena.sparql.exec.http.GSP;
 import org.apache.jena.sparql.exec.http.QueryExecHTTP;
 
-public class TestFusekiModShiro {
+public class TestModShiro {
     static final String unlocal = Host.getHostAddress();
     static final String localRE = Pattern.quote("localhost");
 

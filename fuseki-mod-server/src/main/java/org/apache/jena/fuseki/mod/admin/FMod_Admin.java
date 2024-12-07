@@ -38,7 +38,6 @@ import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.mgt.ActionBackup;
 import org.apache.jena.fuseki.mgt.ActionBackupList;
 import org.apache.jena.fuseki.mgt.ActionDatasets;
-import org.apache.jena.fuseki.mod.other.ActionServerStatus;
 import org.apache.jena.fuseki.server.DataAccessPoint;
 import org.apache.jena.rdf.model.Model;
 import org.slf4j.Logger;

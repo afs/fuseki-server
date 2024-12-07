@@ -24,7 +24,7 @@ import org.junit.platform.suite.api.Suite;
 import org.apache.jena.fuseki.mod.metrics.TestModPrometheus;
 import org.apache.jena.fuseki.mod.admin.TestAdmin;
 import org.apache.jena.fuseki.mod.admin.TestTemplateAddDataset;
-import org.apache.jena.fuseki.mod.shiro.TestFusekiModShiro;
+import org.apache.jena.fuseki.mod.shiro.TestModShiro;
 
 @Suite
 @SelectClasses({
@@ -35,7 +35,7 @@ import org.apache.jena.fuseki.mod.shiro.TestFusekiModShiro;
     // Prometheus
     TestModPrometheus.class,
     // Apache Shiro
-    TestFusekiModShiro.class
+    TestModShiro.class
 })
 public class TC_FusekiMods {
     public TC_FusekiMods() {}

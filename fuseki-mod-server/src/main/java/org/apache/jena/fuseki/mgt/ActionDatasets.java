@@ -182,7 +182,6 @@ public class ActionDatasets extends ActionContainerItem {
                     datasetPath = DataAccessPoint.canonical(datasetName);
                     // ---- Check whether it already exists
                     if ( action.getDataAccessPointRegistry().isRegistered(datasetPath) )
-                        // And abort.
                         ServletOps.error(HttpSC.CONFLICT_409, "Name already registered "+datasetPath);
                 }
 
@@ -209,11 +208,11 @@ public class ActionDatasets extends ActionContainerItem {
                 dataAccessPoint.getDataService().goActive();
                 if ( ! datasetPath.equals(dataAccessPoint.getName()) )
                     FmtLog.warn(action.log, "Inconsistent names: datasetPath = %s; DataAccessPoint name = %s", datasetPath, dataAccessPoint);
+                succeeded = true;
 
                 action.getDataAccessPointRegistry().register(dataAccessPoint);
                 action.setResponseContentType(WebContent.contentTypeTextPlain);
                 ServletOps.success(action);
-                succeeded = true;
             } catch (IOException ex) { IO.exception(ex); }
             finally {
                 if ( ! succeeded ) {

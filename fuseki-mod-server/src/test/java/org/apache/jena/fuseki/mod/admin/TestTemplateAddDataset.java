@@ -20,15 +20,14 @@ package org.apache.jena.fuseki.mod.admin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import org.apache.jena.atlas.lib.FileOps;
 import org.apache.jena.atlas.logging.LogCtl;
@@ -52,10 +51,11 @@ import org.awaitility.Awaitility;
  */
 public class TestTemplateAddDataset {
 
-    private String serverURL = null;
-    private FusekiServer server = null;
+    // One server for all tests
+    private static String serverURL = null;
+    private static FusekiServer server = null;
 
-    @BeforeEach public void startServer() {
+    @BeforeAll public static void startServer() {
         System.setProperty("FUSEKI_BASE", "target/run");
         FileOps.clearAll("target/run");
 
@@ -68,7 +68,7 @@ public class TestTemplateAddDataset {
         return FusekiModules.create(FMod_Admin.create());
     }
 
-    private FusekiServer createServerForTest() {
+    private static FusekiServer createServerForTest() {
         FusekiModules modules = moduleSetup();
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
         FusekiServer testServer = FusekiServer.create()
@@ -79,7 +79,7 @@ public class TestTemplateAddDataset {
         return testServer;
     }
 
-    @AfterEach public void stopServer() {
+    @AfterAll public static void stopServer() {
         if ( server != null )
             server.stop();
         serverURL = null;
@@ -107,18 +107,32 @@ public class TestTemplateAddDataset {
         LogCtl.setLevel(Fuseki.compactLogName,"WARN");
     }
 
-
+    @Order(value = 1)
     @Test public void add_delete_api_1() throws Exception {
         if ( org.apache.jena.tdb1.sys.SystemTDB.isWindows )
             return;
-        testAddDelete("db_mem", "mem", false);
+        testAddDelete("db_mem", "mem", false, false);
     }
 
-    private void testAddDelete(String dbName, String dbType, boolean hasFiles) {
+    @Order(value = 2)
+    @Test public void add_delete_api_2() throws Exception {
+        if ( org.apache.jena.tdb1.sys.SystemTDB.isWindows )
+            return;
+        // This should fail.
+        HttpException ex = assertThrows(HttpException.class, ()->testAddDelete("db_mem", "mem", true, false));
+        // 409 conflict - "a request conflicts with the current state of the target resource."
+        // and the target resource is the container "/$/datasets"
+        assertEquals(HttpSC.CONFLICT_409, ex.getStatusCode());
+    }
+
+    private void testAddDelete(String dbName, String dbType, boolean alreadyExists, boolean hasFiles) {
         String datasetURL = server.datasetURL(dbName);
         Params params = Params.create().add("dbName", dbName).add("dbType", dbType);
 
-        assertFalse(exists(datasetURL));
+        if ( alreadyExists )
+            assertTrue(exists(datasetURL));
+        else
+            assertFalse(exists(datasetURL));
 
         // Use the template
         HttpOp.httpPostForm(adminURL()+"datasets", params);

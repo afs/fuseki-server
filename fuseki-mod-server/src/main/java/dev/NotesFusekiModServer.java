@@ -20,56 +20,34 @@ package dev;
 
 public class NotesFusekiModServer {
 
-    // [ ] run/configuration still has the junk in it.
-    // [ ] Shaded jar not working - UI files return blank
-    // [ ] Packages shiro.ini file
-    //     Has /ds=authcBasic,user[user1] !!!!!!!!!!!
+    // [ ] FusekiModServer has special zero args!
 
-    // *** TestAdmin is all mods - change to FMod_dmin only.
-    // [ ] some tests --> TestFusekiServer
-    // [ ] Admin + user:password.
-
-    // [x] Checked. jena=-fuseki-webapp:
-
-    // [x] TestAdmin: ?state=offline
-    //     Does offlining exist?
-
-    // [ ] Configuration file storage.
-
-    // *** Write tests.
-    // Kill TestModShiro - local host only.
-    // Test ModAdmin - inc localhost
-    // FusekiTestLib.expect403 (copy?temp)
-
-    // [ ] Put it all together
-    // [ ] and test.
-    // [ ] NOTICE
-
-    // server.stop to call FMods.stop()
-
-    // *** Command line customizers must be build modules
-
-    // Passing setup:
-    // [1] Builder.setServetAttibute? or Context passed through building (in builder).
-    //     But arg processing is before FusekiServer.Builder.
-    // [2] Customizers must be build modules
+    // INTEGRATION
+    //     Mods to jena-fuseki-main
+    //     New command to run Fuseki
 
     // ==== Phase 1
-    // [-] Store configuration file before assembler additions.
+    // [x] Store configuration file before assembler additions.
     // [ ] FMod_UI: Setting for the location: --ui (--base is different?)  FUSEKI_HOME?
     // [ ] jena-fuseki-server? jena-fuseki-fulljar?
 
-    // [ ] test admin - present (ping)
+    // [x] test admin - present (ping)
+    // [ ] Test ModAdmin for localhost
+
     // [x] test shiro+localhost
     // [x] test shiro+password
     // [ ] test UI returns something
-    // [ ] test metrics returns something
+    // [x] test metrics returns something
+    // [ ] TestFusekiServer : integration tests
+    // [ ] Update NOTICE
 
-    //   First integration
-    //     Mods to jena-fuseki-main
-    //     New command to run Fuseki
-    //     Assume right mod order
     // [ ] Reload?
+
+    // ==== Passing setup:
+    // [1] Builder.setServetAttibute? or Context passed through building (in builder).
+    //     But arg processing is before FusekiServer.Builder.
+    // [2] Customizers must be build modules
+    // *** Command line customizers must be build modules
 
     // ==== Phase 2
     // == FMod_localhost.
@@ -82,8 +60,6 @@ public class NotesFusekiModServer {
     // Later - go with current chaos.
     // [ ] Take metrics output jena-fuseki-main?
     // org.apache.jena.fuseki.main
-
-
 
     // [ ] Template Lucene etc
 
