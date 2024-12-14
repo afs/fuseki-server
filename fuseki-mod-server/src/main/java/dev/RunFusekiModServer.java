@@ -64,7 +64,7 @@ public class RunFusekiModServer {
     public static void main(String ... a) throws Exception {
         try {
             mainFusekiModServer(a);
-            //mainx(a);
+            //setupAndRun(a);
         } catch(Throwable th) { th.printStackTrace(); }
         finally { System.exit(0); }
     }
@@ -73,7 +73,7 @@ public class RunFusekiModServer {
         FusekiModServer.main();//"--shiro=shiro.ini", "--mem", "/ds");
     }
 
-    public static void mainx(String ... a) {
+    public static void setupAndRun(String ... a) {
 
         final boolean cleanStart = true;
 

@@ -83,7 +83,7 @@ public class TestAdmin {
     // if the two databases are the same.
     static String dsTestTdb2a = "test-tdb2a";
     static String dsTestTdb2b = "test-tdb2b";
-    static String fileBase    = "testing/config/";
+    static String fileBase    = "testing/Config/";
 
     private String serverURL = null;
     private FusekiServer server = null;

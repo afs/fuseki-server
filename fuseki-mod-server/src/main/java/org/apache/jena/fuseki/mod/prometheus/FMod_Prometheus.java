@@ -20,7 +20,6 @@ package org.apache.jena.fuseki.mod.prometheus;
 
 import java.util.Set;
 
-import org.apache.jena.fuseki.ctl.ActionMetrics;
 import org.apache.jena.fuseki.main.FusekiServer;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.metrics.MetricsProviderRegistry;

@@ -111,6 +111,12 @@
     </dependency>
     <dependency>
       <groupId>org.apache.jena</groupId>
+      <artifactId>jena-fuseki-main</artifactId>
+      <classifier>tests</classifier>
+      <version>${ver.jena}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jena</groupId>
       <artifactId>jena-fuseki-ui</artifactId>
       <version>${ver.jena}</version>
     </dependency>

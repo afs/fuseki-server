@@ -16,25 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.jena.fuseki.mod;
+package org.apache.jena.fuseki.mod.admin;
 
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
-import org.apache.jena.fuseki.mod.admin.TS_FusekiServerApp;
-import org.apache.jena.fuseki.mod.metrics.TestModPrometheus;
-import org.apache.jena.fuseki.mod.shiro.TestModShiro;
-
 @Suite
 @SelectClasses({
-    TS_FusekiServerApp.class,
-    // UI
-
-    // Prometheus
-    TestModPrometheus.class,
-    // Apache Shiro
-    TestModShiro.class
+    TestAdmin.class,
+    TestFusekiReload.class,
+    TestTemplateAddDataset.class,
 })
-public class TC_FusekiMods {
-    public TC_FusekiMods() {}
+public class TS_FusekiServerApp {
+
 }

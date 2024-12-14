@@ -18,23 +18,22 @@
 
 package org.apache.jena.fuseki.mod;
 
-import org.junit.platform.suite.api.SelectClasses;
-import org.junit.platform.suite.api.Suite;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import org.apache.jena.fuseki.mod.admin.TS_FusekiServerApp;
-import org.apache.jena.fuseki.mod.metrics.TestModPrometheus;
-import org.apache.jena.fuseki.mod.shiro.TestModShiro;
+import org.junit.jupiter.api.Test;
 
-@Suite
-@SelectClasses({
-    TS_FusekiServerApp.class,
-    // UI
+import org.apache.jena.fuseki.main.FusekiServer;
+import org.apache.jena.fuseki.run.FusekiModServer;
 
-    // Prometheus
-    TestModPrometheus.class,
-    // Apache Shiro
-    TestModShiro.class
-})
-public class TC_FusekiMods {
-    public TC_FusekiMods() {}
+/**
+ * Test for the whole Fuseki server, not components.
+ */
+public class TestFusekiServer {
+    @Test public void run() {
+        // Setup
+        FusekiServer server = FusekiModServer.runAsync("--port=0", "--empty");
+        int port = server.getPort();
+        assertNotEquals(0, port, "Port is zero after async start");
+
+    }
 }

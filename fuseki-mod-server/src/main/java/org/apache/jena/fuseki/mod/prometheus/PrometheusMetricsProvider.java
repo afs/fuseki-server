@@ -17,12 +17,43 @@
  */
 package org.apache.jena.fuseki.mod.prometheus;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.prometheusmetrics.PrometheusConfig;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
+import jakarta.servlet.ServletOutputStream;
+import org.apache.jena.fuseki.metrics.FusekiMetrics;
+import org.apache.jena.fuseki.metrics.MetricsProvider;
+import org.apache.jena.fuseki.servlets.HttpAction;
+import org.apache.jena.fuseki.servlets.ServletOps;
+import org.apache.jena.riot.WebContent;
+
 /**
  */
-public class PrometheusMetricsProvider extends org.apache.jena.fuseki.metrics.prometheus.PrometheusMetricsProvider {
+public class PrometheusMetricsProvider implements MetricsProvider {
 
-    // Eventual location.
+    private PrometheusMeterRegistry meterRegistry;
+
     public PrometheusMetricsProvider() {
-        super();
+        meterRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );
+        meterRegistry.config().commonTags( "application", "fuseki" );
+        FusekiMetrics.registerMetrics(meterRegistry);
+    }
+
+    @Override
+    public MeterRegistry getMeterRegistry() {
+        return meterRegistry;
+    }
+
+    @Override
+    public void scrape(HttpAction action) {
+        try (ServletOutputStream out = action.getResponseOutputStream()) {
+            ServletOps.success(action);
+            action.setResponseContentType( WebContent.contentTypeTextPlain );
+            action.setResponseCharacterEncoding( WebContent.charsetUTF8 );
+
+            out.write( meterRegistry.scrape().getBytes() );
+        } catch (Throwable t) {
+            ServletOps.errorOccurred( t );
+        }
     }
 }

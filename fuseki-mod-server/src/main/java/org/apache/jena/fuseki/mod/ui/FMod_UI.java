@@ -21,10 +21,18 @@ package org.apache.jena.fuseki.mod.ui;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.jena.atlas.io.IOX;
 import org.apache.jena.atlas.logging.FmtLog;
+import org.apache.jena.cmd.ArgDecl;
+import org.apache.jena.cmd.CmdException;
+import org.apache.jena.cmd.CmdGeneral;
 import org.apache.jena.fuseki.Fuseki;
+import org.apache.jena.fuseki.FusekiConfigException;
 import org.apache.jena.fuseki.main.FusekiServer;
+import org.apache.jena.fuseki.main.cmds.ServerArgs;
 import org.apache.jena.fuseki.main.sys.FusekiModule;
 import org.apache.jena.fuseki.mod.admin.FusekiApp;
 import org.apache.jena.fuseki.validation.DataValidator;
@@ -32,8 +40,6 @@ import org.apache.jena.fuseki.validation.IRIValidator;
 import org.apache.jena.fuseki.validation.QueryValidator;
 import org.apache.jena.fuseki.validation.UpdateValidator;
 import org.apache.jena.rdf.model.Model;
-import org.eclipse.jetty.ee10.servlet.DefaultServlet;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
@@ -56,85 +62,90 @@ public class FMod_UI implements FusekiModule {
 //        return FusekiApp.levelFModUI;
 //    }
 
+    private static ArgDecl argUIFiles = new ArgDecl(true, "ui");
+    private String uiAppLocation = null;
+    /** Java resource name used to find the UI files. */
+    private static String resourceNameUI = "webapp";
+    /** Directory name of the root of UI files with {@code FUSEKI_BASE} */
+    private static String directoryNameUI = "webapp";
+
     @Override
     public String name() {
         return "FMod UI";
     }
 
+    // ---- If used from the command line
+    @Override
+    public void serverArgsModify(CmdGeneral fusekiCmd, ServerArgs serverArgs) {
+        fusekiCmd.add(argUIFiles);
+    }
+
+    @Override
+    public void serverArgsPrepare(CmdGeneral fusekiCmd, ServerArgs serverArgs) {
+        if ( fusekiCmd.contains(argUIFiles) ) {
+            uiAppLocation = fusekiCmd.getValue(argUIFiles);
+            IOX.checkReadableDirectory(uiAppLocation, CmdException::new);
+        }
+    }
+
     @Override
     public void prepare(FusekiServer.Builder builder, Set<String> datasetNames, Model configModel) {
-
-        //LOG.info("Fuseki UI loading");
-
         if ( builder.staticFileBase() != null ) {
-            LOG.info("Static content location has already been set: " + builder.staticFileBase());
+            FmtLog.warn(LOG, "Static content location has already been set: %s", builder.staticFileBase());
             return;
         }
 
-        // Find the static content and set all resource lookups to this location.
-        // Places to look:
-        //    $FUSEKI_BASE/webapp (i.e. run/webapp)
-        //    Web resource
-
-        String resourceNameUI = "webapp";
-
-        // Format  jar:file:///.../jena-fuseki-ui-VERSION.jar!/webapp/"
-        String uiAppLocation = getResource(resourceNameUI);
         if ( uiAppLocation == null ) {
-            LOG.warn("No Static content location has been found");
-            return;
+            uiAppLocation = findFusekiApp();
+            if ( uiAppLocation == null ) {
+                LOG.warn("No Static content location has been found");
+                return;
+            }
+        } else {
+            FmtLog.info(LOG, "UI file area = %s", uiAppLocation);
         }
 
-        // To have custom content and the UI, unpack the jar for the UI,
-        // place under $FUSEKI_BASE/webapp, then add custom content files.
-
-        if ( false ) {
-            // Trying to have a
-            // Ideal - add a separate serveBetter : add a servlet at "/$/"
-            DefaultServlet staticServlet = new DefaultServlet();
-            ServletHolder staticContent = new ServletHolder(staticServlet);
-//        staticContent.setInitParameter("baseResource", staticContentDir);
-//        //staticContent.setInitParameter("cacheControl", "false");
-//        context.addServlet(staticContent, "/");
-        }
-
-        // If no admin ....
-        // Check admin available.
-        builder.staticFileBase(uiAppLocation)
-                .addServlet("/$/validate/query", new QueryValidator())
-                .addServlet("/$/validate/update", new UpdateValidator())
-                .addServlet("/$/validate/iri", new IRIValidator())
-                .addServlet("/$/validate/data", new DataValidator())
-                .enableStats(true);
+        builder.staticFileBase(uiAppLocation)       // Set the UI files area.
+               .addServlet("/$/validate/query",     new QueryValidator())
+               .addServlet("/$/validate/update",    new UpdateValidator())
+               .addServlet("/$/validate/iri",       new IRIValidator())
+               .addServlet("/$/validate/data",      new DataValidator())
+               .enableStats(true);
         // LOG.info("Fuseki UI loaded");
     }
 
+    /**
+     * Locate the UI files.
+     * <ol>
+     * <li>Command line name of a directory</li>
+     * <li>{@code $FUSEKI_BASE/webapp}</li>
+     * <li>Classpath java resource {@code webapp}</li>
+     * <ol>
+     */
+    private String findFusekiApp() {
+        // 1:: Command line setting.
+        if ( uiAppLocation != null )
+            return uiAppLocation;
 
-
-    /** Find the UI files */
-    private static String getResource(String resourceName) {
-        // Try the FUSEKI_BASE area ($FUSEKI_BASE/webapp) to allow an override.
-        //
-        // This does not exist unless an existing area already exists and has had UI files added.
+        // 2:: $FUSEKI_BASE/webapp
         // If the FUSEKI_BASE does not exists, it is created later in FMod_admin.prepare
-        // and does not include webapp.
-
-        String x = fromPath(FusekiApp.FUSEKI_BASE, resourceName);
+        // and does not include Fuseki app.
+        String x = fromPath(FusekiApp.FUSEKI_BASE, directoryNameUI);
         if ( x != null ) {
             LOG.info("Fuseki UI - path resource: "+x);
             return x;
         }
 
-        String r = fromClasspath(resourceName);
+        // 3:: From a jar.
+        // Format  jar:file:///.../jena-fuseki-ui-VERSION.jar!/webapp/"
+        String r = fromClasspath(resourceNameUI);
         if ( r != null ) {
             // Simplify name.
-            String displayName = r;
-            if ( displayName.startsWith("jar:") )
+            String displayName = loggingName(r);
             FmtLog.info(LOG, "UI Base = %s", displayName);
             return r;
         }
-
-        // ?? FUSEKI_HOME - no longer used.
+        // Bad!
         return null;
     }
 
@@ -155,9 +166,20 @@ public class FMod_UI implements FusekiModule {
     private static String fromPath(Path path, String resourceName) {
         if ( path != null ) {
             Path path2 = path.resolve(resourceName);
-            if ( Files.exists(path2) )
+            if ( Files.exists(path2) ) {
+                IOX.checkReadableDirectory(path2, FusekiConfigException::new);
                 return path2.toAbsolutePath().toString();
+            }
         }
         return null;
+    }
+
+    private static Pattern regex = Pattern.compile("([^/]*)!");
+
+    private String loggingName(String r) {
+        Matcher matcher = regex.matcher(r);
+        if ( ! matcher.find() )
+            return r;
+        return matcher.group(1);
     }
 }

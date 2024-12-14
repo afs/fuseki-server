@@ -93,8 +93,7 @@ public class TestModShiro {
     @Test public void access_localhost() {
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
         FusekiModules modules = FusekiModules.create(FMod_Shiro.create());
-        System.getProperties().setProperty(FusekiApp.envFusekiShiro, "testing/shiro/shiro_localhost.ini");
-        FusekiServer server = serverBuilderWithShiro("testing/shiro/shiro_localhost.ini")
+        FusekiServer server = serverBuilderWithShiro("testing/Shiro/shiro_localhost.ini")
                 .add("/local/ds", dsg)
                 .add("/public/ds", dsg)
                 .build();
@@ -116,7 +115,7 @@ public class TestModShiro {
     @Test public void access_userPassword() {
         String dsname = "/ds";
         DatasetGraph dsg = DatasetGraphFactory.createTxnMem();
-        FusekiServer server = serverBuilderWithShiro("testing/shiro/shiro_userpassword.ini")
+        FusekiServer server = serverBuilderWithShiro("testing/Shiro/shiro_userpassword.ini")
                 .add(dsname, dsg)
                 .enablePing(true)
                 .build();
@@ -175,7 +174,7 @@ public class TestModShiro {
         FusekiMain.addCustomiser(fmod);
 
         // And also a module!
-        FusekiServer server = FusekiMain.builder("--port=0", "--shiro=testing/shiro/shiro_userpassword.ini", "--mem", dsname)
+        FusekiServer server = FusekiMain.builder("--port=0", "--shiro=testing/Shiro/shiro_userpassword.ini", "--mem", dsname)
                 // Must be same instance.
                 .fusekiModules(FusekiModules.create(fmod))
                 .build();

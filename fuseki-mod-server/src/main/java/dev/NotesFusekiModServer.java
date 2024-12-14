@@ -20,11 +20,19 @@ package dev;
 
 public class NotesFusekiModServer {
 
-    // [ ] FusekiModServer has special zero args!
-
     // INTEGRATION
     //     Mods to jena-fuseki-main
     //     New command to run Fuseki
+    // Extract reload branch misc cleanup.
+
+    //  Metrics.
+    // [x] Phase 1: Keep metrics in jena-fuseki-core. All FMod_Prometheus does is enable it.
+
+    // ==== Startup
+    // Change FusekiMain to have a build(args)-not-start static not via mainRun
+    //     FusekiServer server = FusekiServer.construct(defaultArgs);
+    //     server.start().join();
+    // Same pattern for FuskiModServer
 
     // ==== Phase 1
     // [x] Store configuration file before assembler additions.
@@ -50,6 +58,10 @@ public class NotesFusekiModServer {
     // *** Command line customizers must be build modules
 
     // ==== Phase 2
+    // [ ] RFeload
+    // [ ] Adding new datasets + metrics.
+    // [ ] --admin user:password
+
     // == FMod_localhost.
     // [ ] localhost
     // [ ] modes: Enforce no mixed setup.
